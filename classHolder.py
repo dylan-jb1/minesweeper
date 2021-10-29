@@ -12,7 +12,7 @@ class Level:
         pass
 
 class Button:
-    def __init__(self, pos, dim, colDef, colHov, rectBord, content, fun, funPar):
+    def __init__(self, pos, dim, colDef, colHov, rectBord, content, funDef):
         """
         The constructor for the Button object
 
@@ -36,8 +36,7 @@ class Button:
 
         self.borderSize = rectBord
 
-        self.function = fun
-        self.parameters = funPar
+        self.functionDefinition = funDef
 
         self.content = content
 
@@ -56,10 +55,13 @@ class Button:
             self.padding = content[1]
 
     
-    def press(self):
+    def press(self, ev):
         # if mouse is in the range of the button
         if self.mouseIn():
-            self.function(*(self.parameters))
+            if ev.type == pygame.MOUSEBUTTONDOWN:
+                for x in self.functionDefinition:
+                    if (ev.button == x):
+                        self.functionDefinition[x][0](*(self.functionDefinition[x][1]))
 
     def draw(self, surface):
         colourBox = self.colourHover if self.mouseIn() else self.colourDefault
@@ -83,30 +85,3 @@ class Button:
     def mouseIn(self):
         mousePos = pygame.mouse.get_pos()
         return (mousePos[0] >= self.pos[0] and mousePos[0] <= self.pos[0] + self.dim[0]) and (mousePos[1] >= self.pos[1] and mousePos[1] <= self.pos[1] + self.dim[1])
-
-    def redef(self, obj):
-        self.pos = obj.pos
-        self.dim = obj.dim
-
-        self.colourDefault = obj.colourDefault
-        self.colourHover = obj.colourHover
-
-        self.borderSize = obj.borderSize
-
-        self.function = obj.function
-        self.parameters = obj.parameters
-
-        if len(obj.content) == 5:
-            self.dataType = "text"
-
-            self.text = obj.content[0]
-            self.textCol = obj.content[1]
-            self.textHovCol = obj.content[2]
-            self.textFont = obj.content[3]
-            self.fontSize = obj.content[4]
-        elif len(obj.content) == 2:
-            self.dataType = "image"
-
-            self.image = obj.content[0]
-            self.padding = obj.content[1]
-

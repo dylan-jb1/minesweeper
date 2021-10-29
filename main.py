@@ -1,53 +1,175 @@
-from pygame import surface
+from pygame import PixelArray, surface
 from classHolder import *
 import pygame
 import pygame.freetype
+import random
+
+pygame.init()
+myfont = pygame.freetype.SysFont('Arial B', 0)
+
+# screen size
+
+boardSize = (6,1) # max x = 24 max y = 30 for stability
+
+if boardSize[0] > 30:
+    boardSize = (30,boardSize[1])
+elif boardSize[1] > 24:
+    boardSize = (boardSize[0],24)
+
+mineNum = 40 # max 1 less than total squares on board
+
+boardSquaresMinOne = (boardSize[0]*boardSize[1]) - 1
+
+mineCount = mineNum if mineNum < boardSquaresMinOne else boardSquaresMinOne
+screen = None
+
+revealed = list()
+revealedMines = list()
+flagged = list()
+gameState = "playing"
+
+mainScreenButtons = list()
+gameButtons = dict()
+setSum = dict()
+mines = list()
+
+
+
+mine = pygame.image.load("./assets/mine.png")
+quitImage = pygame.image.load("./assets/quit.png")
+refreshImage = pygame.image.load("./assets/refresh.png")
+flagImage = pygame.image.load("./assets/flag.png")
+
+mineColours = [(100,100,255), (100,255,100), (255,100,100), (255,100,255), (100,200,200), (200,200,100), (100,100,100), (255,180,180)]
 
 def quitButton():
     quit(0)
 
-def revealCurrent(buttonID, buttonArr):
-    buttonArr[buttonID[0]*10 + buttonID[1]].colDef = (0,0,0)
-    buttonArr[buttonID[0]*10 + buttonID[1]] = buttonArr[buttonID[0]*10 + buttonID[1]]
-    print(buttonID)
+def reset(buttons):
+    global gameState,screen
+
+    screenWidth = 30*boardSize[0] + 20
+
+    del(screen)
+    screen = pygame.display.set_mode((screenWidth if screenWidth >= 130 else 130, 30*boardSize[1] + 81))
 
 
-pygame.init()
-myfont = pygame.freetype.SysFont('Courier New', 0)
+    mainScreenButtons.clear()
+    mainScreenButtons.append(Button(((screen.get_rect().width)/2 - 55,10), (50, 50), (10,10,10), (15,15,15), 10, (quitImage, 10), {1: (quitButton, ())}))
+    mainScreenButtons.append(Button(((screen.get_rect().width)/2 + 5,10), (50, 50), (10,10,10), (15,15,15), 10, (refreshImage, 5), {1: (reset, (gameButtons,))}))
 
-screen = pygame.display.set_mode((700,700))
+    buttons.clear()
+    gameButtons.clear()
+    for y in range(boardSize[1]):
+        for x in range(boardSize[0]):
+            buttons[(x,y)] = Button((11 + x*30,71 + y*30), (28, 28), (160,160,160), (120,120,120), 2, ("", (100,100,100), (100,100,100), myfont, 30), {1: (revealCurrent, ((x,y),gameButtons, setSum, mines)), 3: (flag, ((x,y),gameButtons))})
+            setSum[(x,y)] = 0
+    
+    mines.clear()
+    for mine in range(mineCount):
 
-mainScreenButtons = list()
+        x,y = random.randrange(0,boardSize[0]),random.randrange(boardSize[1])
+        while (x,y) in mines:
+            x,y = random.randrange(0,boardSize[0]),random.randrange(boardSize[1])
+        mines.append((x,y))
 
-image = pygame.image.load("./test.png")
+        for j in range(-1,2):
+            for k in range(-1,2):
+                if (x+j >= 0 and y+k >= 0) and (x+j < boardSize[0] and y+k < boardSize[1]):
+                    if not (j== 0 and k == 0):
+                        setSum[(x+j,y+k)] +=1
 
-mainScreenButtons.append(Button((10,10), (100, 50), (10,10,10), (15,15,15), 10, ("Quit", (100,100,100), (100,100,100), myfont, 40), quitButton, ()))
-mainScreenButtons.append(Button((10,110), (100, 50), (255,255,255), (200,200,200), 0, (image, 5), quitButton, ()))
+    revealedMines.clear()
+    revealed.clear()
+    for x in flagged:
+        flag(x,buttons)
+    flagged.clear()
+    gameState = "playing"
 
+def flag(buttonID, buttonSet):
+    if buttonID not in revealed:
+        if buttonID in flagged:
+            flagged.remove(buttonID)
 
-mines = 40
-boardSize = (16,16)
+            buttonSet[buttonID].dataType = "text"
 
-gameButtons = list()
-for y in range(boardSize[1]):
-    for x in range(boardSize[0]):
-        gameButtons.append(Button((11 + x*30,176 + y*30), (28, 28), (255,255,255), (200,200,200), 2, ("", (100,100,100), (100,100,100), myfont, 30), revealCurrent, ((x,y),gameButtons)))
+            buttonSet[buttonID].text = ""
+            buttonSet[buttonID].textCol = (255,255,255)
+            buttonSet[buttonID].textHovCol = (255,255,255)
+            buttonSet[buttonID].textFont = myfont
+            buttonSet[buttonID].fontSize = 10
+        else:
+            flagged.append(buttonID)
 
-gameButtons[0].colDef = (0,0,0)
+            buttonSet[buttonID].dataType = "image"
+            buttonSet[buttonID].image = flagImage
+            buttonSet[buttonID].padding = 0
+
+def revealCurrent(buttonID, buttonSet, sumSet, mineList):
+    global gameState, masterButton
+
+    if buttonID not in revealed and buttonID not in flagged:
+        if buttonID not in mineList:
+
+            buttonSet[buttonID].colourDefault = (255,255,255)
+            buttonSet[buttonID].colourHover = (255,255,255)
+
+            revealed.append(buttonID)
+
+            mineVal = sumSet[buttonID]
+
+            if mineVal != 0:
+                buttonSet[buttonID].dataType = "text"
+                buttonSet[buttonID].text = str(mineVal)
+                buttonSet[buttonID].textCol = mineColours[mineVal-1]
+                buttonSet[buttonID].textHovCol = mineColours[mineVal-1]
+                buttonSet[buttonID].textFont = myfont
+                buttonSet[buttonID].fontSize = 30
+            else:
+                for j in range(-1,2):
+                    for k in range(-1,2):
+                        if (buttonID[0]+j >= 0 and buttonID[1]+k >= 0) and (buttonID[0]+j < boardSize[0] and buttonID[1]+k < boardSize[1]):
+                            if not (j== 0 and k == 0) and (buttonID[0]+j, buttonID[1]+k) not in revealed:
+                                revealCurrent((buttonID[0]+j, buttonID[1]+k), buttonSet, sumSet, mineList)
+
+            #win condition
+            print(len(revealed))
+            if len(revealed) >= ((boardSize[0]*boardSize[1]) - mineCount):
+                gameState = "won"
+        else:
+            buttonSet[buttonID].colourDefault = (255,0,0)
+            buttonSet[buttonID].colourHover = (255,0,0)
+
+            buttonSet[buttonID].dataType = "image"
+            buttonSet[buttonID].image = mine
+            buttonSet[buttonID].padding = 0
+
+            if buttonID not in revealedMines:
+                gameState = "lost"
+                for x in mineList:
+                    if x != buttonID:
+                        revealedMines.append(x)
+                        revealCurrent(x, buttonSet, sumSet, mineList)
+
+            revealedMines.append(buttonID)
+
+reset(gameButtons)
 
 while 1:
     screen.fill((50,50,60))
     event = pygame.event.get()
     for ev in event:
-        if ev.type == pygame.MOUSEBUTTONDOWN:
-            for x in mainScreenButtons:
-                x.press()
+        for x in mainScreenButtons:
+            x.press(ev)
+        if gameState == "playing":
             for x in gameButtons:
-                x.press()
+                gameButtons[x].press(ev)
+
+    print(gameState)
 
     for x in mainScreenButtons:
         x.draw(screen)
     for x in gameButtons:
-        x.draw(screen)
+        gameButtons[x].draw(screen)
 
     pygame.display.flip()
