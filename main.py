@@ -9,7 +9,7 @@ myfont = pygame.freetype.SysFont('Arial B', 0)
 
 # screen size
 
-boardSize = (8,8) # max x = 24 max y = 30 for stability
+boardSize = (16,16) # max x = 24 max y = 30 for stability
 
 if boardSize[0] > 30:
     boardSize = (30,boardSize[1])
@@ -38,7 +38,7 @@ quitImage = pygame.image.load("./assets/quit.png")
 refreshImage = pygame.image.load("./assets/refresh.png")
 flagImage = pygame.image.load("./assets/flag.png")
 
-mineColours = [(100,100,255), (0,120,0), (255,100,100), (255,100,255), (100,200,200), (200,200,100), (100,100,100), (255,180,180)]
+mineColours = [(100,100,255), (0,120,0), (255,100,100), (255,100,255), (40,120,120), (200,200,100), (100,100,100), (255,180,180)]
 
 def quitButton():
     quit(0)
