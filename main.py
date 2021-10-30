@@ -9,14 +9,14 @@ myfont = pygame.freetype.SysFont('Arial B', 0)
 
 # screen size
 
-boardSize = (6,1) # max x = 24 max y = 30 for stability
+boardSize = (8,8) # max x = 24 max y = 30 for stability
 
 if boardSize[0] > 30:
     boardSize = (30,boardSize[1])
 elif boardSize[1] > 24:
     boardSize = (boardSize[0],24)
 
-mineNum = 40 # max 1 less than total squares on board
+mineNum = 10 # max 1 less than total squares on board
 
 boardSquaresMinOne = (boardSize[0]*boardSize[1]) - 1
 
@@ -33,14 +33,12 @@ gameButtons = dict()
 setSum = dict()
 mines = list()
 
-
-
 mine = pygame.image.load("./assets/mine.png")
 quitImage = pygame.image.load("./assets/quit.png")
 refreshImage = pygame.image.load("./assets/refresh.png")
 flagImage = pygame.image.load("./assets/flag.png")
 
-mineColours = [(100,100,255), (100,255,100), (255,100,100), (255,100,255), (100,200,200), (200,200,100), (100,100,100), (255,180,180)]
+mineColours = [(100,100,255), (0,120,0), (255,100,100), (255,100,255), (100,200,200), (200,200,100), (100,100,100), (255,180,180)]
 
 def quitButton():
     quit(0)
@@ -62,7 +60,7 @@ def reset(buttons):
     gameButtons.clear()
     for y in range(boardSize[1]):
         for x in range(boardSize[0]):
-            buttons[(x,y)] = Button((11 + x*30,71 + y*30), (28, 28), (160,160,160), (120,120,120), 2, ("", (100,100,100), (100,100,100), myfont, 30), {1: (revealCurrent, ((x,y),gameButtons, setSum, mines)), 3: (flag, ((x,y),gameButtons))})
+            buttons[(x,y)] = Button((11 + x*30,71 + y*30), (28, 28), (120,120,120), (80,80,80), 2, ("", (100,100,100), (100,100,100), myfont, 30), {1: (revealCurrent, ((x,y),gameButtons, setSum, mines)), 3: (flag, ((x,y),gameButtons))})
             setSum[(x,y)] = 0
     
     mines.clear()
@@ -111,8 +109,8 @@ def revealCurrent(buttonID, buttonSet, sumSet, mineList):
     if buttonID not in revealed and buttonID not in flagged:
         if buttonID not in mineList:
 
-            buttonSet[buttonID].colourDefault = (255,255,255)
-            buttonSet[buttonID].colourHover = (255,255,255)
+            buttonSet[buttonID].colourDefault = (200,200,200)
+            buttonSet[buttonID].colourHover = (200,200,200)
 
             revealed.append(buttonID)
 
@@ -133,7 +131,6 @@ def revealCurrent(buttonID, buttonSet, sumSet, mineList):
                                 revealCurrent((buttonID[0]+j, buttonID[1]+k), buttonSet, sumSet, mineList)
 
             #win condition
-            print(len(revealed))
             if len(revealed) >= ((boardSize[0]*boardSize[1]) - mineCount):
                 gameState = "won"
         else:
@@ -164,8 +161,6 @@ while 1:
         if gameState == "playing":
             for x in gameButtons:
                 gameButtons[x].press(ev)
-
-    print(gameState)
 
     for x in mainScreenButtons:
         x.draw(screen)
