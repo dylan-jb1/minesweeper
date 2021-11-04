@@ -3,20 +3,21 @@ from classHolder import *
 import pygame
 import pygame.freetype
 import random
+import time
 
 pygame.init()
 myfont = pygame.freetype.SysFont('Arial B', 0)
 
 # screen size
 
-boardSize = (16,16) # max x = 24 max y = 30 for stability
+boardSize = (30,24) # max x = 30 max y = 24 for stability
 
 if boardSize[0] > 30:
     boardSize = (30,boardSize[1])
 elif boardSize[1] > 24:
     boardSize = (boardSize[0],24)
 
-mineNum = 10 # max 1 less than total squares on board
+mineNum = 150 # max 1 less than total squares on board
 
 boardSquaresMinOne = (boardSize[0]*boardSize[1]) - 1
 
@@ -27,6 +28,7 @@ revealed = list()
 revealedMines = list()
 flagged = list()
 gameState = "playing"
+firstTime = None
 
 mainScreenButtons = list()
 gameButtons = dict()
@@ -37,6 +39,7 @@ mine = pygame.image.load("./assets/mine.png")
 quitImage = pygame.image.load("./assets/quit.png")
 refreshImage = pygame.image.load("./assets/refresh.png")
 flagImage = pygame.image.load("./assets/flag.png")
+crown = pygame.image.load("./assets/crown.png")
 
 mineColours = [(100,100,255), (0,120,0), (255,100,100), (255,100,255), (40,120,120), (200,200,100), (100,100,100), (255,180,180)]
 
@@ -44,23 +47,27 @@ def quitButton():
     quit(0)
 
 def reset(buttons):
-    global gameState,screen
+    global gameState,screen,firstTime
 
     screenWidth = 30*boardSize[0] + 20
 
+    firstTime = None
+
     del(screen)
-    screen = pygame.display.set_mode((screenWidth if screenWidth >= 130 else 130, 30*boardSize[1] + 81))
+    screen = pygame.display.set_mode((screenWidth if screenWidth >= 350 else 350, 30*boardSize[1] + 81))
 
 
     mainScreenButtons.clear()
+    mainScreenButtons.append(Button(((screen.get_rect().width)/2 - 165,10), (100, 50), (10,10,10), (10,10,10), 10, (mineCount, (255,255,255), (255,255,255), (myfont), 20), {1: (lambda : 1, ())}))
     mainScreenButtons.append(Button(((screen.get_rect().width)/2 - 55,10), (50, 50), (10,10,10), (15,15,15), 10, (quitImage, 10), {1: (quitButton, ())}))
     mainScreenButtons.append(Button(((screen.get_rect().width)/2 + 5,10), (50, 50), (10,10,10), (15,15,15), 10, (refreshImage, 5), {1: (reset, (gameButtons,))}))
+    mainScreenButtons.append(Button(((screen.get_rect().width)/2 + 65,10), (100, 50), (10,10,10), (10,10,10), 10, ("0", (255,255,255), (255,255,255), (myfont), 30), {1: (lambda : 1, ())}))
 
     buttons.clear()
     gameButtons.clear()
     for y in range(boardSize[1]):
         for x in range(boardSize[0]):
-            buttons[(x,y)] = Button((11 + x*30,71 + y*30), (28, 28), (120,120,120), (80,80,80), 2, ("", (100,100,100), (100,100,100), myfont, 30), {1: (revealCurrent, ((x,y),gameButtons, setSum, mines)), 3: (flag, ((x,y),gameButtons))})
+            buttons[(x,y)] = Button((11 + x*30 + ((350/2) - (15*boardSize[0]) - 10 if 30*boardSize[0] < 350 else 0),71 + y*30), (28, 28), (120,120,120), (80,80,80), 2, ("", (100,100,100), (100,100,100), myfont, 30), {1: (revealCurrent, ((x,y),gameButtons, setSum, mines)), 3: (flag, ((x,y),gameButtons))})
             setSum[(x,y)] = 0
     
     mines.clear()
@@ -104,7 +111,10 @@ def flag(buttonID, buttonSet):
             buttonSet[buttonID].padding = 0
 
 def revealCurrent(buttonID, buttonSet, sumSet, mineList):
-    global gameState, masterButton
+    global gameState, masterButton, firstTime
+
+    if firstTime == None:
+        firstTime = time.time()
 
     if buttonID not in revealed and buttonID not in flagged:
         if buttonID not in mineList:
@@ -161,6 +171,26 @@ while 1:
         if gameState == "playing":
             for x in gameButtons:
                 gameButtons[x].press(ev)
+
+    if gameState == "won" and mainScreenButtons[0].dataType == "text":
+        mainScreenButtons[0].dataType = "image"
+        mainScreenButtons[0].image = crown
+        mainScreenButtons[0].padding = 15
+    else:
+        mainScreenButtons[0].text = "Mines:" + str(mineCount - len(flagged)).rjust(3)
+
+    if gameState != "lost" and gameState != "won":
+        mainScreenButtons[3].text = "{:02d}:{:02d}".format(round(time.time() - firstTime) // 60, round(time.time() - firstTime) % 60) if firstTime != None else "00:00"
+    elif gameState == "lost":
+        mainScreenButtons[3].textCol = (255,0,0)
+        mainScreenButtons[0].textCol = (255,0,0)
+        mainScreenButtons[3].textHovCol = (255,0,0)
+        mainScreenButtons[0].textHovCol = (255,0,0)
+    else:
+        mainScreenButtons[3].textCol = (0,255,0)
+        mainScreenButtons[0].textCol = (0,255,0)
+        mainScreenButtons[3].textHovCol = (0,255,0)
+        mainScreenButtons[0].textHovCol = (0,255,0)
 
     for x in mainScreenButtons:
         x.draw(screen)
